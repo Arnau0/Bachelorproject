@@ -3,11 +3,11 @@ import math as math
 import matplotlib.pyplot as plt
 
 c = 29979245800  # cm/s
-h = 6.62507015 / (10**27)  # cm^2 g s^-1
-k_B = 1.380649 / (10**16)  # cm^2 g s^-2 K^-1
-R_sun = 6.96 * (10**10)  # cm
-pc = 3.08567758 * (10**18)  # cm
-au = 1.49597871 * (10**13)  # cm
+h = 6.62507015e-27  # cm^2 g s^-1
+k_B = 1.380649e-16  # cm^2 g s^-2 K^-1
+pc = 3.08567758e18  # cm
+au = 1.49597871e13  # cm
+R_sun = 6.955e10  # cm
 
 # example values from Kavanagh et al. (2020)
 exT = 10**6  # K
