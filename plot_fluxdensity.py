@@ -54,7 +54,7 @@ def toMilliJansky(F):
 # presets
 Mstar = 0.2
 Rstar = 0.3
-Rmax = 100
+Rmax = 1000
 L_grid = 500
 
 # range of the system
@@ -104,13 +104,13 @@ for T in temperature:
 ###########################
 # varying massloss rate
 ###########################
-massloss = np.linspace(50 * Mdot_sun, 500 * Mdot_sun, L_grid)
+massloss = np.linspace(1 * Mdot_sun, 50 * Mdot_sun, L_grid)
+
+# temperature and frequency fixed to example values
+r, u = isothermal_wind(Mstar, Rstar, exT, Rmax, npts=L_grid)
 
 F_Mdot = []
 for Mdot in massloss:
-
-    # temperature and frequency fixed to example values
-    r, u = isothermal_wind(Mstar, Rstar, exT, Rmax, npts=L_grid)
 
     rho = Mdot / (4 * np.pi * (r * Rstar * R_sun) ** 2 * (u * 1e5))
     n = rho / m_p
