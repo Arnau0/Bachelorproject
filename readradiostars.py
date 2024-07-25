@@ -5,7 +5,6 @@
 
 import pandas as pd
 import numpy as np
-import csv
 from astroquery.simbad import Simbad
 
 # radiostars catalogue
@@ -21,13 +20,36 @@ fluxdensity = data["Radio_I_flux_int"].values.astype(float)
 parallax = data["Archival_parallax"].values.astype(float)
 d = 1000 / parallax
 
+
+def getMass(M_ks):
+    """Calculate the mass of a star using the semi-empirical mass-K magnitude relation from Mann et al. (2015).
+    M_ks = K magnitude observed from the star
+    returns mass in stellar radii
+    """
+    a = 0.5858
+    bX = 0.3872 * M_ks
+    cX2 = -0.1217 * M_ks**2
+    dX3 = 0.0106 * M_ks**3
+    eX4 = -2.7262e-4 * M_ks**4
+    return a + bX + cX2 + dX3 + eX4
+
+
 # query Simbad database
-#
-# in progress...
-qrysimbad = "Wolf 1225"
-result = Simbad.add_votable_fields("flux(K)")
-Mks = Simbad.query_object(qrysimbad)["FLUX_K"].value[0]
-print(Mks)
+Mks_list = []
+Mass = []
+Simbad.add_votable_fields("flux(K)")
+for qrysimbad in Simbad_name:
+    if str(qrysimbad) != "nan":
+        try:
+            Mks = Simbad.query_object(str(qrysimbad))["FLUX_K"].value[0]
+            Mks_list.append(Mks)
+            Mass.append(getMass(Mks))
+        except TypeError:
+            Mks_list.append("Error Name")
+            Mass.append("Error Name")
+    else:
+        Mks_list.append("No Name")
+        Mass.append("No Name")
 
 
 def datatocsv(FolderLocation, dataset, filename, columnnames):
@@ -46,17 +68,27 @@ def datatocsv(FolderLocation, dataset, filename, columnnames):
 
 
 # add all desired quantities to a single np 2darray
-dataset = np.concatenate(([Simbad_name], [frequency], [fluxdensity]))
+dataset = np.concatenate(
+    ([Simbad_name], [frequency], [fluxdensity], [parallax], [d], [Mks_list], [Mass])
+)
 
 
 # label each collumn in the same order as done in np.concatenate
-columns = ["Simbad ID", "Radio_freq_MHz", "Radio_I_flux_int"]
+columns = [
+    "Simbad ID",
+    "Radio_freq_MHz",
+    "Radio_I_flux_int",
+    "Archival_parallax",
+    "distance",
+    "Flux K",
+    "Mass",
+]
 
 
 # location to store the csv file
 folder_path = r"C:\Users\Arnau\Documents\Bachelorproject\Python\QueryResults"
 
-csvfilename = "test3"
+csvfilename = "Radiostars_Complete"
 
 # create csv
-# datatocsv(folder_path, dataset, filename=csvfilename, columnnames=columns)
+datatocsv(folder_path, dataset, filename=csvfilename, columnnames=columns)
