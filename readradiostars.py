@@ -7,9 +7,6 @@ import pandas as pd
 import numpy as np
 from astroquery.simbad import Simbad
 
-# radiostars catalogue
-data_path = r"C:\Users\Arnau\Documents\Bachelorproject\Python\Radio.dat"
-
 
 data = pd.read_csv("SRSC_filtered.csv", delimiter=",")
 Simbad_name = data["Simbad_ID"].values
