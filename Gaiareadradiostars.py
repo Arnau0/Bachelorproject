@@ -12,6 +12,71 @@ plx_full = data["Archival_parallax"].values
 ID = []
 plx = []
 
+
+def getKs(G, G_BPRP):
+    Ks = G - (-0.0981 + 2.098 * G_BPRP - 0.1579 * (G_BPRP**2))
+    return Ks
+
+
+def query(simbad_id, gaia_id):
+
+    Ks = []
+    plx = []
+    source = []
+    ID = []
+    Simbad.add_votable_fields("plx", "flux(K)")
+    for i, id in enumerate(simbad_id):
+        if id != "":  # check if there is a simbad id
+            if np.str_(id) != "nan":
+                if id != simbad_id[i - 1]:  # check if it is not a duplicate
+                    obj = Simbad.query_object(id)
+                    try:
+                        if not obj["FLUX_K"].mask[0]:  # check if K mag can be retrieved
+                            if not obj["PLX_VALUE"].mask[
+                                0
+                            ]:  # check if parallax can be retrieved
+                                Ks.append(obj["FLUX_K"].value[0])
+                                plx.append(obj["PLX_VALUE"].value[0])
+                                source.append("Simbad")
+                                ID.append(id)
+                        elif gaia_id[i] != "":
+                            if np.str_(gaia_id[i]) != "nan":
+                                gaia_number = gaia_id[i].replace("Gaia DR3 ", "")
+
+                                qrygaia = f"SELECT phot_g_mean_mag, bp_rp, parallax FROM gaiadr3.gaia_source WHERE source_id = {gaia_number}"
+                                job = Gaia.launch_job_async(qrygaia)
+                                row = job.get_results()
+                                Ks.append(
+                                    getKs(row["phot_g_mean_mag"][0], row["bp_rp"][0])
+                                )
+                                plx.append(row["parallax"][0])
+                                source.append("Gaia")
+                                ID.append(gaia_id[i])
+                    except TypeError:
+                        if np.str_(gaia_id[i]) != "nan":
+                            gaia_number = gaia_id[i].replace("Gaia DR3 ", "")
+
+                            qrygaia = f"SELECT phot_g_mean_mag, bp_rp, parallax FROM gaiadr3.gaia_source WHERE source_id = {gaia_number}"
+                            job = Gaia.launch_job_async(qrygaia)
+                            row = job.get_results()
+                            Ks.append(getKs(row["phot_g_mean_mag"][0], row["bp_rp"][0]))
+                            plx.append(row["parallax"][0])
+                            source.append("Gaia")
+                            ID.append(gaia_id[i])
+    return Ks, plx, source, ID
+
+
+Ks, plx, source, ID = query(Simbad_ID, Gaia_ID)
+
+pd.DataFrame(
+    {"ID": ID, "K_mag": Ks, "Parallax": plx, "source_obtained": source}
+).to_csv("mags_plx_combined_id.csv", index=False)
+
+
+#########################
+# old code
+#######################
+
 # making the list unique for simbad & gaia id's combined
 # knowing that the last id in the csv is a duplicate of the second to last id!
 for i in range(len(Simbad_ID) - 1):
@@ -37,39 +102,6 @@ for i in range(len(Simbad_ID) - 1):
         if Simbad_ID[i] != Simbad_ID[i + 1]:
             ID.append(Simbad_ID[i])
             plx.append(plx_full[i])
-
-print(np.shape(ID))
-
-
-def getKs(G, G_BPRP):
-    Ks = G - (-0.0981 + 2.098 * G_BPRP - 0.1579 * (G_BPRP**2))
-    return Ks
-
-
-def query(source_ids):
-
-    Ks = []
-
-    Simbad.add_votable_fields("flux(K)")
-    for id in source_ids:
-        if "Gaia DR3 " in str(id):
-            number_id = id.replace("Gaia DR3 ", "")
-            qrygaia = f"SELECT phot_g_mean_mag, bp_rp FROM gaiadr3.gaia_source WHERE source_id = {number_id}"
-            job = Gaia.launch_job_async(qrygaia)
-            row = job.get_results()
-            Ks_value = getKs(row["phot_g_mean_mag"][0], row["bp_rp"][0])
-            Ks.append(Ks_value)
-        else:
-            Ks_value = Simbad.query_object(str(id))["FLUX_K"].value[0]
-            Ks.append(Ks_value)
-    return Ks
-
-
-Ks = query(ID)
-print(Ks)
-pd.DataFrame({"ID": ID, "Ks": Ks, "Parallax": plx}).to_csv(
-    "mags_combined_id.csv", index=False
-)
 
 
 def queryGaia(source_ids):
