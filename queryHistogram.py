@@ -22,21 +22,29 @@ def getAbsMag(m, d):
 
 
 data = pd.read_csv(
-    r"C:\Users\Arnau\Documents\Bachelorproject\Python\mags_combined_id.csv",
+    r"C:\Users\Arnau\Documents\Bachelorproject\Python\mags_plx_combined_id.csv",
     delimiter=",",
 )
 
 
+oldKs = data["K_mag"].values
+oldplx = data["Parallax"].values
+oldsource = data["source_obtained"].values.astype(str)
+oldID = data["ID"].values.astype(str)
 Ks = []
-d = []
-for i in range(len(data["ID"])):
-    if data["Ks"][i] != "--":
-        d_ = 1000 / data["Parallax"][i]
-        if str(d_) != "nan":
-            Ks.append(float(data["Ks"][i]))
-            d.append(1000 / float(data["Parallax"][i]))
+plx = []
+source = []
+ID = []
+for i, k in enumerate(oldplx):
+    if k != "--":
+        if oldKs[i] != "--":
+            Ks.append(float(oldKs[i]))
+            plx.append(float(oldplx[i]))
+            source.append(str(oldsource[i]))
+            ID.append(str(oldID[i]))
 
-print(np.shape(d))
+d = [1000 / x for x in plx]
+print(np.shape(Ks))
 MKs = getAbsMag(Ks, d)
 Mstar = getMass(MKs)
 
