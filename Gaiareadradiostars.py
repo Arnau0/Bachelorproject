@@ -46,12 +46,15 @@ def query(simbad_id, gaia_id):
                                 qrygaia = f"SELECT phot_g_mean_mag, bp_rp, parallax FROM gaiadr3.gaia_source WHERE source_id = {gaia_number}"
                                 job = Gaia.launch_job_async(qrygaia)
                                 row = job.get_results()
-                                Ks.append(
-                                    getKs(row["phot_g_mean_mag"][0], row["bp_rp"][0])
-                                )
-                                plx.append(row["parallax"][0])
-                                source.append("Gaia")
-                                ID.append(gaia_id[i])
+                                if row["phot_g_mean_mag"][0] < 13:
+                                    Ks.append(
+                                        getKs(
+                                            row["phot_g_mean_mag"][0], row["bp_rp"][0]
+                                        )
+                                    )
+                                    plx.append(row["parallax"][0])
+                                    source.append("Gaia")
+                                    ID.append(gaia_id[i])
                     except TypeError:
                         if np.str_(gaia_id[i]) != "nan":
                             gaia_number = gaia_id[i].replace("Gaia DR3 ", "")
@@ -59,10 +62,13 @@ def query(simbad_id, gaia_id):
                             qrygaia = f"SELECT phot_g_mean_mag, bp_rp, parallax FROM gaiadr3.gaia_source WHERE source_id = {gaia_number}"
                             job = Gaia.launch_job_async(qrygaia)
                             row = job.get_results()
-                            Ks.append(getKs(row["phot_g_mean_mag"][0], row["bp_rp"][0]))
-                            plx.append(row["parallax"][0])
-                            source.append("Gaia")
-                            ID.append(gaia_id[i])
+                            if row["phot_g_mean_mag"][0] < 13:
+                                Ks.append(
+                                    getKs(row["phot_g_mean_mag"][0], row["bp_rp"][0])
+                                )
+                                plx.append(row["parallax"][0])
+                                source.append("Gaia")
+                                ID.append(gaia_id[i])
     return Ks, plx, source, ID
 
 
