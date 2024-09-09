@@ -1,3 +1,8 @@
+# Compute the mass-loss rate constraint given a series of lowest detected flux densities
+# requires csv file with columns: id, mass, radius, frequency, lowest flux density and distance
+# returns the given csv file plus constrainted mass-loss rate
+
+
 import numpy as np
 import math as math
 import matplotlib.pyplot as plt
@@ -95,6 +100,7 @@ def Fluxcalc(Rstar, Mstar, nu, d, Rmax=1500, L_grid=500):
     dx = (x_axis[1] - x_axis[0]) * R_sun * Rstar
     dy = (y_axis[1] - y_axis[0]) * R_sun * Rstar
     dA = 2 * np.pi * y_axis * dy * R_sun * Rstar
+    dA[0] = np.pi * dy**2
 
     #####################################
     # calculating the flux density
@@ -122,20 +128,22 @@ def Fluxcalc(Rstar, Mstar, nu, d, Rmax=1500, L_grid=500):
         I = I_tau(tau_max, nu, exT)
 
         F = np.sum(I * dA) / (d**2)
-        # F = toMilliJansky(F)
+        F = toMilliJansky(F)
         F_Mdot.append(F)
 
     return massloss, F_Mdot
 
-
-previous_data = pd.read_csv("Radiostars_massloss_3.csv", delimiter=",")
-previous_massloss = previous_data["Massloss-rate_constraint"].values.astype(float)
 
 cell_size = 0.1
 high_grid_size = 1000
 low_grid_size = 100
 high_cells = high_grid_size / cell_size
 low_cells = low_grid_size / cell_size
+
+
+# not needed if there was no previous computation
+previous_data = pd.read_csv("Radiostars_massloss_3.csv", delimiter=",")
+previous_massloss = previous_data["Massloss-rate_constraint"].values.astype(float)
 
 masslossconstraints = []
 for i in range(len(ID)):
@@ -152,8 +160,6 @@ for i in range(len(ID)):
         limflux = Flux[i]
         limMdot = np.interp(limflux, F_Mdot, masslossrate)
         masslossconstraints.append(np.interp(Flux[i], F_Mdot, masslossrate))
-        # print(Radii[i], Masses[i])
-        print(np.interp(Flux[i], F_Mdot, masslossrate))
 
     else:
         # print("low")
@@ -168,43 +174,50 @@ for i in range(len(ID)):
         limflux = Flux[i]
         limMdot = np.interp(limflux, F_Mdot, masslossrate)
         masslossconstraints.append(np.interp(Flux[i], F_Mdot, masslossrate))
-        # print(Radii[i], Masses[i])
-        print(np.interp(Flux[i], F_Mdot, masslossrate))
+
 
 # add massloss constraints and save as new csv file
 data["Massloss-rate_constraint"] = masslossconstraints
-pd.DataFrame(data).to_csv("Radiostars_massloss_5.csv", index=False)
-
-# example: last star on the list
-# testing grid size and n points
-# sizes = np.arange(500, 2501, 500)
-# points = np.arange(100, 501, 100)
-# for npoints in points:
-# masslossrate, F_Mdot = Fluxcalc(
-#    Radii[-1], Masses[-1], Frequencies[-1] * 1e6, Distances[-1] * pc, L_grid=npoints
-# )
-# plt.figure()
-# plt.title(ID[-1])
-# plt.plot(masslossrate, F_Mdot)
-# plt.xlabel("Massloss rate (g/s)")
-# plt.ylabel("Flux density (mJy)")
-# plt.show()
+pd.DataFrame(data).to_csv("Radiostars_massloss_6.csv", index=False)
 
 
-# limflux = Flux[-1]
-# limit1 = np.full((500), limflux)
-# limMdot = np.interp(limflux, F_Mdot, masslossrate)
-# limit2 = np.full((500), limMdot)
-# lum = []
-# for i, f in enumerate(F_Mdot):
-#    lum.append(getLum(f, Distances[i]))
+# below is for plotting proxima centauri of other stars.
+exit()
 
-# plt.figure()
-# plt.title(ID[-1])
-# plt.plot(Masses, lum)
+index = -1  # G 131-26
+# index = 180  # proxima centauri
+
+
+masslossrate, F_Mdot = Fluxcalc(
+    0.12,
+    0.15,
+    Frequencies[index] * 1e6,
+    pc * 4.24 / 3.26,
+)
+
+limflux = Flux[index]
+limit1 = np.full((100), limflux)
+limMdot = np.interp(limflux, F_Mdot, masslossrate)
+limit2 = np.full((100), limMdot)
+lum = []
+for i, f in enumerate(F_Mdot):
+    lum.append(getLum(f, Distances[i]))
+
+plt.figure()
+plt.title(ID[index])
+# plt.title("Proxima Centauri")  # for proxima centauri specifically
+plt.plot(masslossrate / Mdot_sun, F_Mdot)
+plt.axhline(limflux, color="k")
+# plt.axvline(limMdot / Mdot_sun, color="k")
 # plt.plot(masslossrate / Mdot_sun, limit1, "black")
 # plt.plot(limit2 / Mdot_sun, F_Mdot, "black")
-# plt.xlabel("Mass ($M_\odot$)")
-# plt.ylabel("Radio Luminosity ($W Hz^{-1}$)")
 
-# plt.show()
+ax = plt.gca()
+ax.set_ylim([0, 11])
+
+plt.xlabel("Mass-loss rate ($\dot{M}_\odot$)")
+plt.xscale("log")
+plt.ylabel("Radio Luminosity ($W Hz^{-1}$)")
+plt.ylabel("Flux density (mJy)")
+
+plt.show()
